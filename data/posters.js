@@ -165,7 +165,7 @@ window.POSTERS = {
 
     // ---- Subject examples: a shared practice applied in one subject and year level.
     // These replace the original three infographics. "target" links each to its target page.
-    { id: "science-y9-report-writing", routine: "cer", subject: "Year 9 Science", target: "literacy.consolidating.writing", area: "literacy", stage: "consolidating", icon: "blocks", layout: "cards",
+    { id: "science-y9-report-writing", routine: "cer", subject: "Year 9 Science", subjectId: "science", target: "literacy.consolidating.writing", area: "literacy", stage: "consolidating", icon: "blocks", layout: "cards",
       title: "Writing up your results", subtitle: "Argue from your evidence: claim, evidence, reasoning.",
       cards: [
         { h: "Claim", t: "Answer the investigation question in one clear sentence." },
@@ -175,7 +175,7 @@ window.POSTERS = {
       ],
       example: { h: "Example · conservation of mass", lines: ["**Claim:** In a closed system, mass is conserved in a chemical reaction.", "**Evidence:** Vinegar and bicarb soda in a sealed bag: 152.4 g before and after. In an open beaker: 1.8 g lost.", "**Reasoning:** Atoms are rearranged, not created or destroyed. In the open beaker, carbon dioxide gas escaped.", "**Evaluate:** Three trials each; the balance reads to 0.1 g."] } },
 
-    { id: "geography-y7-reading", routine: "bda", subject: "Year 7 Geography", target: "literacy.consolidating.reading", area: "literacy", stage: "consolidating", icon: "book", layout: "columns",
+    { id: "geography-y7-reading", routine: "bda", subject: "Year 7 Geography", subjectId: "humanities", target: "literacy.consolidating.reading", area: "literacy", stage: "consolidating", icon: "book", layout: "columns",
       title: "Reading for meaning in Geography", subtitle: "Maps, graphs, photos and statistics are texts too.",
       cards: [
         { h: "Before", t: "Read the title, key, scale and source. What is this about? Set yourself a question." },
@@ -184,7 +184,7 @@ window.POSTERS = {
       ],
       example: { h: "Reading a climate graph for Darwin", lines: ["**Before:** title and place; months along the bottom; rainfall bars (mm); temperature line (°C).", "**During:** which months are wettest? Which are driest?", "**After:** “Darwin has a wet season from about November to April and a dry season from May to October.”"] } },
 
-    { id: "technology-y5-measurement", routine: "no-unit", subject: "Year 5 Design and Technologies", target: "numeracy.developing.mg", area: "numeracy", stage: "developing", icon: "ruler", layout: "cards",
+    { id: "technology-y5-measurement", routine: "no-unit", subject: "Year 5 Design and Technologies", subjectId: "technologies", target: "numeracy.developing.mg", area: "numeracy", stage: "developing", icon: "ruler", layout: "cards",
       title: "Units and measurement", subtitle: "Measure like a designer, so what you make fits.",
       cards: [
         { h: "Always include the unit", t: "Write 120 mm, not 120." },

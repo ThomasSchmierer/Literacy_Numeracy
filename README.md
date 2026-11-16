@@ -1,6 +1,6 @@
 # TGS Literacy and Numeracy Framework — web app
 
-A static website for the Toowoomba Grammar School Literacy and Numeracy Framework. It has five sections: Overview, Literacy, Numeracy, Progressions and Implementation. Every cell in the literacy and numeracy grids opens a classroom guide for that target.
+A static website for the Toowoomba Grammar School Literacy and Numeracy Framework. Its sections are organised by what people come to do: **Literacy** and **Numeracy** (information and stage targets), **Subjects** (strategies, one page per subject), **Resources** (shared routines, teaching moves, posters) and **Framework** (stages, progressions, Tier 2, data tracking, roles). Every target opens a classroom guide.
 
 There is no build step and nothing to install. It is plain HTML, CSS and JavaScript, so it runs on GitHub Pages as is, or straight from the folder.
 
@@ -34,7 +34,13 @@ There is no build step and nothing to install. It is plain HTML, CSS and JavaScr
 ## Navigation
 
 - **Home** (`#/`) is the landing page: a site map of every section and its parts, a "Find a target" picker, and shortcuts by subject.
-- Each section (Overview, Literacy, Numeracy, Progressions, Implementation) has a **secondary bar** under the header listing its parts. It's defined once in `subnavItems()` in `app.js`, and the Home site map is built from the same list, so the two always match.
+- Top bar: **Home · Literacy · Numeracy · Subjects · Resources · Framework**.
+  - **Literacy / Numeracy**: about, domains, stage targets, how English or Mathematics teaches it, and links to each subject.
+  - **Subjects**: English, Mathematics, Junior School (P–6), Science, Humanities, Health and PE, Technologies. Each page has that subject's literacy and numeracy strategies for every stage, its routines and its posters. Subject pages are defined in `SUBJECT_PAGES` in `app.js`.
+  - **Resources**: shared routines, routines by target, teaching moves, and the poster galleries.
+  - **Framework**: three layers, stages, documents, progressions, Tier 2 referral, data tracking, roles, next steps and questions.
+- Each section has a **secondary bar** under the header listing its parts. It's defined once in `subnavItems()` in `app.js`, and the Home site map is built from the same list, so the two always match.
+- Old addresses from before the reorganisation (`#/overview`, `#/implementation`, `#/literacy?view=science` and so on) are redirected to their new place by `redirectFor()` in `app.js`.
 
 ## Teaching moves
 

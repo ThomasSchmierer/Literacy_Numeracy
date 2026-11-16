@@ -45,38 +45,38 @@
   // Each section's in-page and sub-page links. Items: {t: label, h: href, on: function(ctx) -> active?}
   // or {sep: "Group label"}. ctx = {path, q, anchor} for the current route.
   function subnavItems(key) {
-    if (key === "overview") {
-      return [
-        { t: "Four stages", h: "#/overview#stages" }, { t: "Literacy and numeracy", h: "#/overview#areas" },
-        { t: "Why whole-school", h: "#/overview#why" }, { t: "Posters", h: "#/overview#posters-preview" },
-        { t: "How the pieces fit", h: "#/overview#documents" }
-      ];
-    }
     if (key === "literacy" || key === "numeracy") {
       var A = C[key], base = "#/" + key;
       var view = function (v, label) {
-        return { t: label, h: base + "?view=" + v + "#grid", on: function (c) { return c.path === key && (c.q.get("view") || "targets") === v && c.anchor !== "domains" && c.anchor !== "across" && c.anchor !== "classroom-posters"; } };
+        return { t: label, h: base + "?view=" + v + "#grid", on: function (c) { return c.path === key && (c.q.get("view") || "targets") === v && (!c.anchor || c.anchor === "grid"); } };
       };
-      return [{ t: "Domains", h: base + "#domains" }, { sep: "By stage" }, view("targets", "Targets"), view("focus", "Stage focus"), view("method", A.lead + " method"), view("routines", "Routines"), view("posters", "Staff guides"),
-        { sep: "Subjects" }].concat(C.subjects.map(function (s) { return view(s.id, s.name); })).concat([
-        { sep: "More" }, { t: "Across subjects", h: base + "#across" }, { t: "Classroom posters", h: base + "#classroom-posters" }]);
+      return [{ t: "About", h: base + "#about" }, { t: "Domains", h: base + "#domains" }, { sep: "Stage targets" }, view("targets", "Targets"), view("focus", "Stage focus"), view("posters", "Staff guides"),
+        { sep: "" }, { t: "How " + A.lead + " teaches it", h: base + "#teach" }, { t: "Across subjects", h: base + "#across" },
+        { sep: "In your subject" }].concat(SUBJECT_PAGES.filter(function (sp) { return !(sp.kind === "lead" && sp.area !== key); }).map(function (sp) {
+          return { t: sp.name, h: "#/subject/" + sp.id + (sp.kind === "subject" ? "#" + key : "") };
+        }));
     }
-    if (key === "progressions") {
-      var set = function (s, label) { return { t: label, h: "#/progressions?set=" + s, on: function (c) { return c.path === "progressions" && (c.q.get("set") || "literacy") === s && c.anchor !== "about-workbook"; } }; };
-      return [set("literacy", "Literacy sub-elements"), set("numeracy", "Numeracy sub-elements"), { sep: "Subject evidence" }].concat(
-        C.subjects.map(function (s) { return { t: s.name, h: "#/progressions?set=subjects&subject=" + s.id, on: function (c) { return c.q.get("set") === "subjects" && (c.q.get("subject") || "science") === s.id; } }; })
-      ).concat([{ sep: "More" }, { t: "About the workbook", h: "#/progressions?set=literacy#about-workbook" }]);
+    if (key === "subjects") {
+      return [{ t: "All subjects", h: "#/subjects", on: function (c) { return c.path === "subjects"; } }, { sep: "Lead" }].concat(
+        SUBJECT_PAGES.map(function (sp, i) {
+          var it = { t: sp.name, h: "#/subject/" + sp.id, on: function (c) { return c.path === "subject/" + sp.id; } };
+          return i === 3 ? [{ sep: "Subjects" }, it] : [it];
+        }).reduce(function (a, b) { return a.concat(b); }, []));
     }
-    if (key === "implementation") {
-      var post = function (s, label) { return { t: label, h: "#/posters?set=" + s, on: function (c) { return c.path === "posters" && (c.q.get("set") || "classroom") === s; } }; };
+    if (key === "resources") {
+      var post = function (s, label) { return { t: label, h: "#/posters?set=" + s, on: function (c) { return c.path === "posters" && (c.q.get("set") || "classroom") === s || (s !== "staff" && /^poster\/classroom\//.test(c.path) && (s === "subject") === !!(posterById(c.path.split("/")[2]) || {}).subject) || (s === "staff" && /^poster\/staff\//.test(c.path)); } }; };
       return [
-        { t: "Three layers", h: "#/implementation#layers" }, { t: "Teaching moves", h: "#/implementation#moves", on: function (c) { return c.anchor === "moves" || /^move\//.test(c.path); } },
-        { t: "Tier 2", h: "#/implementation#tier2" }, { t: "Data tracking", h: "#/implementation#data-tracking" },
-        { t: "Roles", h: "#/implementation#roles" }, { t: "Next steps", h: "#/implementation#next-steps" }, { t: "Questions", h: "#/implementation#questions" },
-        { sep: "Resources" },
-        { t: "Routines by target", h: "#/implementation#by-target" }, { t: "Shared routines", h: "#/implementation#routines", on: function (c) { return c.anchor === "routines" || /^routine\//.test(c.path); } },
-        post("classroom", "Classroom posters"), post("subject", "Subject examples"), post("staff", "Staff guides")
+        { t: "Shared routines", h: "#/resources#routines", on: function (c) { return (c.path === "resources" && c.anchor === "routines") || /^routine\//.test(c.path); } },
+        { t: "Routines by target", h: "#/resources#by-target" },
+        { t: "Teaching moves", h: "#/resources#moves", on: function (c) { return (c.path === "resources" && c.anchor === "moves") || /^move\//.test(c.path); } },
+        { sep: "Posters" }, post("classroom", "Classroom posters"), post("subject", "Subject examples"), post("staff", "Staff guides")
       ];
+    }
+    if (key === "framework") {
+      var fw = function (id, label) { return { t: label, h: "#/framework#" + id }; };
+      return [fw("layers", "Three layers"), fw("stages", "Four stages"), fw("areas", "Literacy and numeracy"), fw("why", "Why whole-school"), fw("documents", "How the pieces fit"),
+        { sep: "" }, { t: "Progressions", h: "#/progressions", on: function (c) { return c.path === "progressions"; } },
+        { sep: "" }, fw("tier2", "Tier 2 referral"), fw("data-tracking", "Data tracking"), fw("roles", "Roles"), fw("next-steps", "Next steps"), fw("questions", "Questions")];
     }
     return null;
   }
@@ -86,12 +86,12 @@
     var qi = raw.indexOf("?");
     return { path: qi >= 0 ? raw.slice(0, qi) : raw, q: new URLSearchParams(qi >= 0 ? raw.slice(qi + 1) : ""), anchor: anchor };
   }
-  var SECTION_NAMES = { overview: "Overview", literacy: "Literacy", numeracy: "Numeracy", progressions: "Progressions", implementation: "Implementation" };
+  var SECTION_NAMES = { literacy: "Literacy", numeracy: "Numeracy", subjects: "Subjects", resources: "Resources", framework: "Framework" };
   function subnav(key) {
     var items = subnavItems(key);
     if (!items) return "";
     var c = currentCtx();
-    var h = '<nav class="subnav" aria-label="' + esc(SECTION_NAMES[key]) + ' sections"><div class="wrap subnav-inner"><a class="sn-title" href="' + (key === "overview" ? "#/overview" : "#/" + key) + '">' + esc(SECTION_NAMES[key]) + "</a>";
+    var h = '<nav class="subnav" aria-label="' + esc(SECTION_NAMES[key]) + ' sections"><div class="wrap subnav-inner"><a class="sn-title" href="' + (key === "subjects" ? "#/subjects" : "#/" + key) + '">' + esc(SECTION_NAMES[key]) + "</a>";
     items.forEach(function (it) {
       if (it.sep !== undefined) { h += '<span class="sn-sep">' + esc(it.sep) + "</span>"; return; }
       var active = it.on ? it.on(c) : (c.anchor && it.h.split("#")[2] === c.anchor && it.h.indexOf("#/" + c.path) === 0);
@@ -164,7 +164,7 @@
       '<div class="kicker">' + esc(C.meta.school) + " · " + esc(C.meta.status) + "</div>" +
       "<h1>Literacy and Numeracy Framework</h1>" +
       '<p class="lead">What every student should be able to do at each stage from Prep to Year 12, how English and Mathematics teach it, and what every other subject does, with the routines, posters and curriculum links behind it.</p>' +
-      '<div class="actions"><a class="btn btn-light" href="#find">Find your way</a><a class="btn btn-ghost" href="#/overview">Read the overview</a></div>' +
+      '<div class="actions"><a class="btn btn-light" href="#find">Find your way</a><a class="btn btn-ghost" href="#/subjects">Go to your subject</a><a class="btn btn-ghost" href="#/framework">About the Framework</a></div>' +
       "</div></section>";
 
     // 2. Rationale
@@ -207,14 +207,13 @@
           '<label>Stage<select name="stage">' + C.stages.map(function (s) { return '<option value="' + s.id + '">' + esc(s.name + " (" + s.years + ")") + "</option>"; }).join("") + "</select></label>" +
           '<label>Domain<select name="domain"></select></label></div>' +
           '<button class="btn btn-solid" type="submit">Open the target</button></form>' +
-        '<div class="card"><h3>Start from your subject</h3>' +
-          '<div class="home-subjects"><span>Literacy</span><a href="#/literacy?view=method#grid">English</a>' + C.subjects.map(function (s) { return '<a href="#/literacy?view=' + s.id + '#grid">' + esc(s.name) + "</a>"; }).join("") + "</div>" +
-          '<div class="home-subjects"><span>Numeracy</span><a href="#/numeracy?view=method#grid">Mathematics</a>' + C.subjects.map(function (s) { return '<a href="#/numeracy?view=' + s.id + '#grid">' + esc(s.name) + "</a>"; }).join("") + "</div>" +
+        '<div class="card"><h3>Start from your subject</h3><p class="small muted" style="margin:0 0 8px">Everything for your subject on one page: literacy and numeracy strategies for every stage, the routines and your posters.</p>' +
+          '<div class="home-subjects">' + SUBJECT_PAGES.map(function (sp) { return '<a href="#/subject/' + sp.id + '">' + esc(sp.name) + "</a>"; }).join("") + "</div>" +
         "</div>" +
       "</div>" +
       '<div class="quick-links">' + [
-        ["#/overview", "Overview"], ["#/literacy", "Literacy"], ["#/numeracy", "Numeracy"], ["#/progressions", "Progressions"],
-        ["#/implementation", "Implementation"], ["#/posters?set=classroom", "Posters"], ["#/implementation#moves", "Teaching moves"], ["#/implementation#routines", "Shared routines"]
+        ["#/literacy", "Literacy"], ["#/numeracy", "Numeracy"], ["#/subjects", "Subjects"], ["#/resources", "Resources"],
+        ["#/framework", "Framework"], ["#/posters?set=classroom", "Posters"], ["#/resources#routines", "Shared routines"], ["#/progressions", "Progressions"]
       ].map(function (l) { return '<a class="quick" href="' + l[0] + '">' + esc(l[1]) + "</a>"; }).join("") + "</div>" +
       "</div></section>";
 
@@ -224,12 +223,12 @@
         '<div class="sm-links">' + sitemapGroups(key) + (extra || "") + "</div></div>";
     };
     h += '<section class="section" id="sitemap"><div class="wrap"><h2>Everything on this site</h2><p class="section-intro">Every section and its parts. The same links appear in the bar under the header on each section’s pages.</p><div class="sitemap-rows">' +
-      tileRow("overview", "Overview", "#/overview", "What the Framework is for, the four stages, and how the documents fit together.") +
-      tileRow("literacy", "Literacy", "#/literacy", "Speaking and listening, reading and writing: the targets, the English method and every subject's strategy.", miniTargets("literacy")) +
-      tileRow("numeracy", "Numeracy", "#/numeracy", "Number and algebra, measurement and geometry, statistics and probability: the targets, the Mathematics method and every subject's strategy.", miniTargets("numeracy")) +
-      tileRow("progressions", "Progressions", "#/progressions", "The ACARA sub-elements year by year, with the curriculum codes and each subject's evidence.") +
-      tileRow("implementation", "Implementation", "#/implementation", "Teaching moves, Tier 2 referral, data tracking and roles, plus the resources: routines and posters.",
+      tileRow("literacy", "Literacy", "#/literacy", "Information: what literacy is, its three domains, the target for every stage, and how English teaches it.", miniTargets("literacy")) +
+      tileRow("numeracy", "Numeracy", "#/numeracy", "Information: what numeracy is, its three domains, the target for every stage, and how Mathematics teaches it.", miniTargets("numeracy")) +
+      tileRow("subjects", "Subjects", "#/subjects", "Strategies: one page per subject with its literacy and numeracy strategies for every stage, the routines to use and its posters.") +
+      tileRow("resources", "Resources", "#/resources", "Shared tools: the routines, teaching moves and posters every subject uses.",
         '<div class="sm-group"><h3>Teaching moves</h3><ul>' + C.moves.map(function (m) { return '<li><a href="#/move/' + m.id + '">' + esc(m.name) + "</a></li>"; }).join("") + "</ul></div>") +
+      tileRow("framework", "Framework", "#/framework", "About the Framework: the stages, progressions, Tier 2 referral, data tracking, roles, next steps and review questions.") +
       "</div></div></section>";
 
     page("home", "Home", h);
@@ -247,15 +246,21 @@
     for (var i = 0; i < jumps.length; i++) jumps[i].addEventListener("click", function (e) { e.preventDefault(); scrollToId("find"); });
   }
 
-  /* ---------- overview ---------- */
-  function renderOverview() {
-    var o = C.overview;
+  /* ---------- framework (about the framework itself) ---------- */
+  function renderFramework() {
+    var o = C.overview, I = C.implementation;
     var h = '<section class="hero"><div class="wrap">' +
-      '<div class="kicker">Framework overview · ' + esc(C.meta.status) + "</div>" +
-      "<h1>Literacy and Numeracy at TGS</h1>" +
+      '<div class="kicker">The Framework · ' + esc(C.meta.status) + "</div>" +
+      "<h1>About the Framework</h1>" +
       '<p class="lead">' + md(o.intention) + "</p>" +
-      '<div class="actions"><a class="btn btn-light" href="#/literacy">Explore Literacy</a><a class="btn btn-light" href="#/numeracy">Explore Numeracy</a><a class="btn btn-ghost" href="#/implementation">Classroom routines</a></div>' +
+      '<div class="actions"><a class="btn btn-light" href="#/literacy">Literacy</a><a class="btn btn-light" href="#/numeracy">Numeracy</a><a class="btn btn-ghost" href="#/subjects">Your subject</a><a class="btn btn-ghost" href="#/resources">Resources</a></div>' +
       "</div></section>";
+
+    h += '<section class="section" id="layers"><div class="wrap"><h2>Three layers for every target</h2><div class="grid-3 layers">' +
+      '<div class="card layer"><h3>Target</h3><p class="small" style="margin:0">What a student can do by the end of the stage. One per domain per stage, matching Framework Tables 3 and 6. Found under <a href="#/literacy">Literacy</a> and <a href="#/numeracy">Numeracy</a>.</p></div>' +
+      '<div class="card layer"><h3>Lead method</h3><p class="small" style="margin:0">How English (literacy) or Mathematics (numeracy) teaches it explicitly. The Junior School class teacher leads P–6. Found under <a href="#/subjects">Subjects</a>.</p></div>' +
+      '<div class="card layer"><h3>Subject strategy</h3><p class="small" style="margin:0">What Science, Humanities, Health and PE, and Technologies teachers do, grounded in each subject’s own achievement standard. Found under <a href="#/subjects">Subjects</a>.</p></div>' +
+      "</div></div></section>";
 
     h += '<section class="section" id="stages"><div class="wrap"><h2>Four stages, used everywhere</h2>' +
       '<p class="section-intro">Every target, method and subject strategy is organised by the same four developmental stages, Prep to Year 12.</p><div class="grid-4">';
@@ -274,7 +279,7 @@
       A.domains.forEach(function (d) {
         h += '<div style="border:1px solid var(--line);border-radius:8px;padding:10px"><strong style="font-size:.92rem">' + esc(d.name) + '</strong><div class="small muted">' + esc(d.plain) + "</div></div>";
       });
-      h += '</div><a class="btn btn-light" style="border:1px solid var(--line)" href="#/' + id + '">Open the ' + esc(A.name.toLowerCase()) + " targets →</a></div>";
+      h += '</div><a class="btn btn-outline" href="#/' + id + '">' + esc(A.name) + " information →</a></div>";
     });
     h += "</div></div></section>";
 
@@ -282,35 +287,57 @@
       '<div class="card"><h2>Why a whole-school approach</h2><ul>' + o.why.map(function (w) { return "<li>" + md(w) + "</li>"; }).join("") + "</ul>" +
       '<p class="muted small" style="margin:0">' + md(o.goal) + "</p></div>" +
       '<div class="card"><h2>How to use this site</h2><ol class="steps">' +
-      "<li><strong>Find your stage and domain</strong> in the Literacy or Numeracy grid. The grids match Framework Tables 3 and 6.</li>" +
-      "<li><strong>Switch the grid view</strong> to see the targets, the English or Mathematics method, or what your own subject does.</li>" +
-      "<li><strong>Click any cell</strong> for its classroom guide: what success looks like, ideas, an example, and the curriculum codes behind it.</li>" +
-      "<li><strong>Use the shared routines</strong> in Implementation, so students meet the same language in every room.</li>" +
+      '<li><strong><a href="#/literacy">Literacy</a> and <a href="#/numeracy">Numeracy</a></strong> explain what each is, its domains, and the target for every stage. Click a target for its full classroom guide.</li>' +
+      '<li><strong><a href="#/subjects">Subjects</a></strong> gives each teacher one page: English, Mathematics, Junior School, Science, Humanities, Health and PE, and Technologies.</li>' +
+      '<li><strong><a href="#/resources">Resources</a></strong> holds the shared routines, teaching moves and posters that every subject uses.</li>' +
+      "<li><strong>Framework</strong> (this page) covers the stages, progressions, Tier 2 referral, data tracking, roles and next steps.</li>" +
       "</ol></div></div></div></section>";
-
-    h += '<section class="section" id="posters-preview"><div class="wrap"><h2>Posters for every classroom</h2>' +
-      '<p class="section-intro">Classroom posters show the shared practices in student language. Staff guides put each target on one page. All are ready to print.</p><div class="poster-row wide">' +
-      ["cer", "bda", "sentence-strategies", "no-unit", "graph-conventions"].map(posterById).filter(Boolean).map(function (p) { return tile(classroomHref(p), classroomPoster(p), p.title, "Classroom poster"); }).join("") +
-      tile(staffHref("literacy", "consolidating", "writing"), staffPoster(C.literacy, stage("consolidating"), domain(C.literacy, "writing")), "Consolidating Writing", "Staff guide") +
-      '</div><p style="margin-top:14px"><a class="btn btn-solid" href="#/posters?set=classroom">See all classroom posters</a> <a class="btn btn-outline" href="#/posters?set=staff">See all staff guides</a></p></div></section>';
 
     h += '<section class="section" id="documents"><div class="wrap"><h2>How the pieces fit</h2><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Document</th><th>What it contains</th></tr></thead><tbody>';
     o.documents.forEach(function (d) { h += "<tr><td><strong>" + esc(d.name) + "</strong></td><td>" + md(d.what) + "</td></tr>"; });
     h += "</tbody></table></div></div></section>";
-    page("overview", "Overview", h);
-    fitPosters();
+
+    h += '<section class="section" id="progressions-intro"><div class="wrap"><div class="card"><h2>Progressions</h2>' +
+      '<p>' + md(C.progressions.what) + " " + md(C.progressions.notCurriculum) + "</p>" +
+      '<div class="chips"><a class="chip" href="#/progressions?set=literacy">Literacy sub-elements</a><a class="chip" href="#/progressions?set=numeracy">Numeracy sub-elements</a><a class="chip" href="#/progressions?set=subjects">Subject evidence</a></div></div></div></section>';
+
+    h += '<section class="section" id="tier2"><div class="wrap"><h2>Tier 2 referral points</h2><p class="section-intro">Points where students not yet secure in a constrained skill are referred for Tier 2 support. They are built into the targets and feed the Tier 1–3 intervention plan, which is still to be written.</p>' +
+      ["literacy", "numeracy"].map(function (a) {
+        var pts = I.tier2.filter(function (t) { return t.area === a; });
+        var proposed = pts.some(function (t) { return t.proposed; });
+        return "<h3 style=\"margin-top:18px\">" + esc(C[a].name) + (proposed ? ' <span class="pill warn">Proposed</span>' : "") + "</h3>" +
+          (proposed ? '<p class="small muted">Each sits where the progressions show a constrained numeracy skill concluding. Thresholds to be agreed with the Mathematics Head of Department and the Diverse Learners team.</p>' : "") +
+          '<div class="tier-list">' + pts.map(function (t) { return '<a class="card tier' + (t.proposed ? " proposed" : "") + '" href="' + t.link + '"><b>' + esc(t.when) + "</b><span>" + md(t.what) + "</span></a>"; }).join("") + "</div>";
+      }).join("") + "</div></section>";
+
+    h += '<section class="section" id="data-tracking"><div class="wrap"><h2>Data tracking map</h2><p class="section-intro">What evidence tracks student progress against the targets at each stage. NAPLAN falls at the stage boundaries: Year 3 starts Developing, Year 5 is mid-Developing, Year 7 starts Consolidating and Year 9 ends it.</p><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Stage</th><th>Target year</th><th>Standardised evidence</th><th>Teacher-judgement evidence</th><th>To resolve in the data audit</th></tr></thead><tbody>';
+    I.measurement.forEach(function (m) {
+      h += '<tr><td class="stage-td stage-' + m.stage + '">' + esc(stage(m.stage).name) + "</td><td>" + esc(m.year) + "</td><td>" + md(m.standardised) + "</td><td>" + md(m.teacher) + "</td><td>" + md(m.gaps) + "</td></tr>";
+    });
+    h += "</tbody></table></div></div></section>";
+
+    h += '<section class="section" id="roles"><div class="wrap"><div class="grid-2"><div class="card"><h2>Roles and accountability</h2><div class="tbl-wrap" style="box-shadow:none"><table class="tbl"><tbody>' +
+      I.roles.map(function (r) { return "<tr><td><strong>" + esc(r.role) + "</strong></td><td>" + md(r.resp) + "</td></tr>"; }).join("") +
+      '</tbody></table></div><p class="small muted" style="margin:10px 0 0">Role titles are indicative and still to be reconciled with TGS position titles.</p></div>';
+    h += '<div class="card" id="next-steps"><h2>Next steps</h2><ul class="next-list">' +
+      I.nextSteps.map(function (n) {
+        var cls = n.status === "Drafted" ? "ok" : n.status === "Next" ? "next" : "";
+        return '<li><span class="pill ' + cls + '">' + esc(n.status) + "</span><div><strong>" + esc(n.t) + '</strong><div class="small muted">' + md(n.d) + "</div></div></li>";
+      }).join("") + "</ul></div></div></div></section>";
+
+    h += '<section class="section" id="questions"><div class="wrap"><div class="card"><h2>Questions for review</h2><ol>' +
+      I.questions.map(function (x) { return "<li>" + md(x) + "</li>"; }).join("") + "</ol></div></div></section>";
+
+    page("framework", "Framework", h);
   }
 
-  /* ---------- literacy / numeracy area page ---------- */
+  /* ---------- literacy / numeracy: information pages ---------- */
   function areaViews(A) {
-    var v = [
+    return [
       { id: "targets", label: "Targets" },
       { id: "focus", label: "Stage focus" },
-      { id: "method", label: A.lead + " method" },
-      { id: "routines", label: "Routines" },
       { id: "posters", label: "Staff guides" }
     ];
-    return v;
   }
 
   function routineCell(A, sId, dId) {
@@ -335,52 +362,59 @@
     return h + "</tbody></table></div>";
   }
 
+  // A stage x domain grid whose cells are links. cellFn(s, d) -> inner HTML, hrefFn(s, d) -> link.
+  function linkGrid(A, stages, cellFn, hrefFn, auditLabel) {
+    var h = '<div class="fw-grid-wrap"><table class="fw-grid"><thead><tr><th>Stage</th>';
+    A.domains.forEach(function (d) { h += "<th>" + esc(d.name) + "</th>"; });
+    h += "</tr></thead><tbody>";
+    stages.forEach(function (s) {
+      h += "<tr>" + stageCell(s, '<span class="s-target">by end of Year ' + esc(s.targetYear) + "</span>");
+      A.domains.forEach(function (d) {
+        h += '<td data-audit="' + esc(auditLabel + " › " + s.name + " › " + d.name) + '"><a class="cell-link" href="' + hrefFn(s, d) + '">' + cellFn(s, d) + '<span class="go">Open guide →</span></a></td>';
+      });
+      h += "</tr>";
+    });
+    return h + "</tbody></table></div>";
+  }
+
   function renderArea(areaId, q) {
-    var A = C[areaId];
+    var A = C[areaId], o = C.overview;
     var view = q.get("view") || "targets";
-    var subj = subject(view);
     var tableNo = areaId === "literacy" ? "3" : "6";
 
     var h = '<section class="hero"><div class="wrap">' +
-      '<div class="kicker">' + esc(A.lead) + " leads · every subject applies</div>" +
+      '<div class="kicker">' + esc(A.name) + " information</div>" +
       "<h1>" + esc(A.name) + "</h1>" +
       '<p class="lead">' + md(A.plain) + "</p>" +
-      '<div class="actions"><a class="btn btn-light" href="#/' + areaId + '?view=targets#grid">See the targets</a>' +
-      '<a class="btn btn-ghost" href="#/' + areaId + '?view=routines#grid">Go to the implementation routines</a>' +
-      '<a class="btn btn-ghost" href="#/' + areaId + '?view=posters#grid">Staff guides</a>' +
-      '<a class="btn btn-ghost" href="#/' + areaId + '#classroom-posters">Classroom posters</a></div>' +
+      '<div class="actions"><a class="btn btn-light" href="#/' + areaId + '?view=targets#grid">Stage targets</a>' +
+      '<a class="btn btn-ghost" href="#/' + areaId + '#teach">How ' + esc(A.lead) + " teaches it</a>" +
+      '<a class="btn btn-ghost" href="#/subjects">' + esc(A.name) + " in your subject</a></div>" +
       "</div></section>";
 
-    h += '<section class="section" id="domains"><div class="wrap"><div class="grid-3">';
+    h += '<section class="section" id="about"><div class="wrap"><div class="card area-block"><h2>About ' + esc(A.name.toLowerCase()) + "</h2>" +
+      '<p class="area-statement">' + md(areaId === "literacy" ? o.statementLiteracy : o.statementNumeracy) + "</p>" +
+      '<p class="area-def"><span>Framework definition</span>' + md(A.definition) + "</p>" +
+      '<p class="area-def"><span>The challenge</span>' + md(A.challenge) + "</p>" +
+      '<p class="area-goal"><span>Our goal</span>' + md(areaId === "literacy" ? o.literacyGoal : o.numeracyGoal) + "</p></div></div></section>";
+
+    h += '<section class="section" id="domains"><div class="wrap"><h2>Domains</h2><div class="grid-3">';
     A.domains.forEach(function (d) {
       h += '<div class="card domain-card"><h3>' + esc(d.name) + '</h3><p class="plain">' + esc(d.plain) + "</p><p class=\"small\">" + md(d.def) + "</p><ul>" +
         d.parts.map(function (p) { return "<li>" + md(p) + "</li>"; }).join("") + "</ul></div>";
     });
     h += "</div></div></section>";
 
-    h += '<section class="section" id="grid"><div class="wrap"><h2>' + esc(A.name) + " by stage</h2>" +
-      '<p class="section-intro">The same layout as Framework Table ' + tableNo + ". Change the view to see the targets, the stage focus, how " + esc(A.lead) + " teaches it, or what each subject does. <strong>Click any cell</strong> to open its classroom guide.</p>";
-
-    h += '<div class="tabs" role="tablist">';
-    areaViews(A).forEach(function (v) {
-      h += '<a class="tab" role="tab" aria-selected="' + (v.id === view) + '" href="#/' + areaId + "?view=" + v.id + '#grid">' + esc(v.label) + "</a>";
-    });
-    h += '<span class="tab-group-label">Subjects</span>';
-    C.subjects.forEach(function (s) {
-      h += '<a class="tab" role="tab" aria-selected="' + (s.id === view) + '" href="#/' + areaId + "?view=" + s.id + '#grid">' + esc(s.name) + "</a>";
-    });
-    h += "</div>";
-
+    h += '<section class="section" id="grid"><div class="wrap"><h2>Stage targets</h2>' +
+      '<p class="section-intro">The same layout as Framework Table ' + tableNo + ". <strong>Click any cell</strong> to open its classroom guide. For what each subject does, go to <a href=\"#/subjects\">Subjects</a>.</p>";
+    h += '<div class="tabs" role="tablist">' + areaViews(A).map(function (v) {
+      return '<a class="tab" role="tab" aria-selected="' + (v.id === view) + '" href="#/' + areaId + "?view=" + v.id + '#grid">' + esc(v.label) + "</a>";
+    }).join("") + "</div>";
     var viewHelp = {
-      targets: "**Targets** are the measurable outcome: what a student can do by the end of the stage. Each one is built from the stage focus, and each is what the classroom guide behind the cell is built around.",
+      targets: "**Targets** are the measurable outcome: what a student can do by the end of the stage. Each one is built from the stage focus.",
       focus: "**Stage focus** is the Framework's Table " + tableNo + " wording: what teaching concentrates on across the stage. The targets turn each focus into something a student can be seen to do.",
-      method: "**" + A.lead + " method** is how " + A.lead + " teaches explicitly towards each target.",
-      posters: "**Staff guides** put each target on one page: what it looks like, the routines, the classroom ideas and what every subject does. Click one to open, print or download it.",
-      routines: "**Routines** are the shared whole-school strategies that put each target into practice. Click a routine to see how it works, or open the guide for the full picture."
+      posters: "**Staff guides** put each target on one page: what it looks like, the routines, the classroom ideas and what every subject does. Click one to open, print or download it."
     };
     if (viewHelp[view]) h += '<p class="view-help">' + md(viewHelp[view]) + "</p>";
-    if (subj && subj.note) h += '<p class="callout info" style="margin:0 0 12px">' + md(subj.note) + "</p>";
-    if (subj) h += '<p class="small muted" style="margin:-4px 0 10px"><strong>Link</strong> is what ' + esc(subj.name) + "'s own achievement standard asks for. <em>Grey italic</em> means it isn't required there, so the strategy is an opportunity rather than an obligation.</p>";
 
     h += '<div class="fw-grid-wrap"><table class="fw-grid"><thead><tr><th>Stage</th>';
     A.domains.forEach(function (d) { h += "<th>" + esc(d.name) + "</th>"; });
@@ -390,25 +424,12 @@
       var extra = view === "targets" ? '<span class="s-target">by end of Year ' + esc(s.targetYear) + "</span>" : "";
       h += "<tr>" + stageCell(s, extra);
       A.domains.forEach(function (d) {
-        if (view === "routines") {
-          h += '<td class="routine-td" data-audit="' + esc(A.name + " grid › Routines › " + s.name + " › " + d.name) + '">' + routineCell(A, s.id, d.id) + "</td>";
-          return;
-        }
         if (view === "posters") {
           h += '<td class="poster-td" data-audit="' + esc(A.name + " grid › Staff guides › " + s.name + " › " + d.name) + '">' + tile(staffHref(areaId, s.id, d.id), staffPoster(A, s, d), "Open the staff guide") + "</td>";
           return;
         }
-        var inner;
-        if (view === "targets") inner = md(A.targets[s.id][d.id]);
-        else if (view === "focus") inner = md(A.focus[s.id][d.id]);
-        else if (view === "method") inner = md(A.method[s.id][d.id]);
-        else if (subj) {
-          var c = A.subjectCells[subj.id][s.id][d.id];
-          inner = '<span class="lnk' + (c.gap ? " gap" : "") + '"><b>Link:</b> ' + md(c.l) + '</span><span class="strat"><b>Strategy:</b> ' + md(c.s) + "</span>";
-        }
-        var label = A.name + ", " + d.name + ", " + s.name + " stage: open guide";
-        var viewName = subj ? subj.name : (view === "targets" ? "Targets" : view === "focus" ? "Stage focus" : A.lead + " method");
-        h += '<td data-audit="' + esc(A.name + " grid › " + viewName + " › " + s.name + " › " + d.name) + '"><a class="cell-link" href="' + targetHref(areaId, s.id, d.id, view === "targets" ? "" : view) + '" aria-label="' + esc(label) + '">' + inner + '<span class="go">Open guide →</span></a></td>';
+        var inner = md(view === "focus" ? A.focus[s.id][d.id] : A.targets[s.id][d.id]);
+        h += '<td data-audit="' + esc(A.name + " grid › " + (view === "focus" ? "Stage focus" : "Targets") + " › " + s.name + " › " + d.name) + '"><a class="cell-link" href="' + targetHref(areaId, s.id, d.id) + '" aria-label="' + esc(A.name + ", " + d.name + ", " + s.name + " stage: open guide") + '">' + inner + '<span class="go">Open guide →</span></a></td>';
       });
       if (view === "targets") h += '<td class="measure">' + md(A.measure[s.id]) + "</td>";
       h += "</tr>";
@@ -417,30 +438,139 @@
     if (view === "targets") h += '<p class="grid-hint"><strong>[audit]</strong> marks evidence that depends on the Year 1 data audit. Extending targets are set at Year 10, where the Australian Curriculum ends; Years 11–12 are not yet mapped to QCE.</p>';
     h += "</div></section>";
 
-    var areaPosters = sharedPosters().filter(function (p) { return p.area === areaId; });
-    var areaSubject = subjectPosters(function (p) { return p.area === areaId; });
-    if (areaPosters.length) {
-      h += '<section class="section" id="classroom-posters"><div class="wrap"><h2>Classroom posters for ' + esc(A.name.toLowerCase()) + "</h2>" +
-        '<p class="section-intro">The shared ' + esc(A.name.toLowerCase()) + ' practices in student language, one design for every room. Click a poster to open, print or download it.</p><div class="poster-grid">' +
-        areaPosters.map(function (p) {
-          var R = C.routines[p.routine];
-          return tile(classroomHref(p), classroomPoster(p), p.title, R ? R.stages.map(function (x) { return stage(x).name; }).join(", ") : "");
-        }).join("") + "</div>" +
-        (areaSubject.length ? '<h3 style="margin-top:22px">Subject examples</h3><p class="small muted">The same practices applied in one subject and year level.</p><div class="poster-grid">' + areaSubject.map(subjectTile).join("") + "</div>" : "") +
-        "</div></section>";
-    }
+    h += '<section class="section" id="teach"><div class="wrap"><h2>How ' + esc(A.lead) + " teaches it</h2>" +
+      '<p class="section-intro">' + md(A.leadWho) + " Each cell shows the target and the explicit teaching behind it. The full " + esc(A.lead) + ' page is under <a href="#/subject/' + (areaId === "literacy" ? "english" : "mathematics") + '">Subjects</a>.</p>' +
+      linkGrid(A, C.stages, function (s, d) { return '<span class="lnk"><b>Target:</b> ' + md(A.targets[s.id][d.id]) + '</span><span class="strat"><b>' + esc(A.lead) + ":</b> " + md(A.method[s.id][d.id]) + "</span>"; },
+        function (s, d) { return targetHref(areaId, s.id, d.id, "method"); }, A.name + " › " + A.lead + " method") +
+      '<div class="card" style="margin-top:16px"><h3>What explicit teaching looks like</h3><div class="tbl-wrap" style="box-shadow:none"><table class="tbl"><thead><tr><th>' + (areaId === "literacy" ? "Literacy element" : "Numeracy element") + "</th><th>What explicit teaching looks like</th></tr></thead><tbody>" +
+      A.pedagogy.map(function (p) { return "<tr><td><strong>" + esc(p.el) + "</strong></td><td>" + md(p.how) + "</td></tr>"; }).join("") + "</tbody></table></div></div>" +
+      "</div></section>";
 
-    h += '<section class="section" id="across"><div class="wrap"><div class="grid-2">';
-    h += '<div class="card"><h2>What this means across subjects</h2><div class="tbl-wrap" style="box-shadow:none"><table class="tbl"><tbody>';
-    C.stages.forEach(function (s) { h += '<tr><td class="stage-td stage-' + s.id + '">' + esc(s.name) + "<br><span style=\"font-weight:400\">" + esc(s.years) + "</span></td><td>" + md(A.acrossSubjects[s.id]) + "</td></tr>"; });
-    h += "</tbody></table></div></div>";
-    h += '<div class="card"><h2>How we teach it</h2><p class="small muted">' + md(A.challenge) + '</p><div class="tbl-wrap" style="box-shadow:none"><table class="tbl"><thead><tr><th>' + (areaId === "literacy" ? "Literacy element" : "Numeracy element") + "</th><th>What explicit teaching looks like</th></tr></thead><tbody>";
-    A.pedagogy.forEach(function (p) { h += "<tr><td><strong>" + esc(p.el) + "</strong></td><td>" + md(p.how) + "</td></tr>"; });
-    h += "</tbody></table></div></div>";
-    h += "</div></div></section>";
+    h += '<section class="section" id="across"><div class="wrap"><h2>' + esc(A.name) + " across subjects</h2><div class=\"grid-2\">" +
+      '<div class="card"><h3>What this means across subjects</h3><div class="tbl-wrap" style="box-shadow:none"><table class="tbl"><tbody>' +
+      C.stages.map(function (s) { return '<tr><td class="stage-td stage-' + s.id + '">' + esc(s.name) + "<br><span style=\"font-weight:400\">" + esc(s.years) + "</span></td><td>" + md(A.acrossSubjects[s.id]) + "</td></tr>"; }).join("") +
+      "</tbody></table></div></div>" +
+      '<div class="card"><h3>' + esc(A.name) + ' in each subject</h3><p class="small muted">Each subject has its own page with its strategies for every stage, the routines to use and its posters.</p><div class="subject-links">' +
+      SUBJECT_PAGES.filter(function (sp) { return !(sp.kind === "lead" && sp.area !== areaId); }).map(function (sp) {
+        return '<a class="subject-link" href="#/subject/' + sp.id + (sp.kind === "subject" ? "#" + areaId : "") + '"><b>' + esc(sp.name) + "</b><span>" + esc(sp.kind === "lead" ? "Leads " + A.name.toLowerCase() : sp.kind === "junior" ? "P–6 class teachers" : "Strategies by stage") + "</span></a>";
+      }).join("") + "</div></div></div></div></section>";
 
     page(areaId, A.name, h);
     fitPosters();
+  }
+
+  /* ---------- subjects: one page per teacher ---------- */
+  var SUBJECT_PAGES = [
+    { id: "english", name: "English", kind: "lead", area: "literacy", blurb: "Leads literacy: the explicit teaching of speaking and listening, reading and writing." },
+    { id: "mathematics", name: "Mathematics", kind: "lead", area: "numeracy", blurb: "Leads numeracy: the explicit teaching of number, measurement, geometry, statistics and probability." },
+    { id: "junior", name: "Junior School (P–6)", kind: "junior", blurb: "Class teachers teach literacy and numeracy explicitly through the Foundational and Developing stages." }
+  ].concat(C.subjects.map(function (s) {
+    return { id: s.id, name: s.name, kind: "subject", note: s.note, blurb: "Literacy and numeracy strategies for every stage, grounded in " + s.name + "’s own achievement standard." };
+  }));
+  var SUBJECT_WHO = { science: /Science/, humanities: /Humanities|Geography|HASS/, hpe: /Health|HPE/, technologies: /Technolog/ };
+  function subjectPage(id) { for (var i = 0; i < SUBJECT_PAGES.length; i++) if (SUBJECT_PAGES[i].id === id) return SUBJECT_PAGES[i]; return null; }
+  function routinesFor(sp) {
+    return Object.keys(C.routines).filter(function (r) {
+      var R = C.routines[r];
+      if (sp.kind === "lead") return R.area === sp.area;
+      if (sp.kind === "junior") return R.stages.indexOf("foundational") >= 0 || R.stages.indexOf("developing") >= 0;
+      return /^All |all subjects|Every subject other than Mathematics/i.test(R.who) || (SUBJECT_WHO[sp.id] && SUBJECT_WHO[sp.id].test(R.who));
+    });
+  }
+  function routineCard(id) {
+    var R = C.routines[id], rp = posterById(id);
+    return '<a class="card routine-card ' + R.area + (rp ? " has-poster" : "") + '" href="#/routine/' + id + '"><div><h3>' + esc(R.t) + "</h3>" + moveBadges(C.routineMoves[id]) + "<p>" + md(R.what) + '</p><div class="meta">' + stagePills(R.stages) +
+      (R.status ? ' <span class="pill warn">' + esc(R.status) + "</span>" : "") + "</div></div>" +
+      (rp ? '<div class="rc-thumb">' + frame(classroomPoster(rp), "thumb") + "</div>" : "") + "</a>";
+  }
+  function routinesSection(sp) {
+    var ids = routinesFor(sp);
+    return '<section class="section" id="routines"><div class="wrap"><h2>Shared routines to use</h2>' +
+      '<p class="section-intro">The whole-school routines that apply to ' + esc(sp.name) + ". Use the same routine and the same words as every other classroom.</p>" +
+      ["literacy", "numeracy"].map(function (a) {
+        var list = ids.filter(function (r) { return C.routines[r].area === a; });
+        return list.length ? "<h3>" + esc(C[a].name) + ' routines</h3><div class="grid-3" style="margin-bottom:18px">' + list.map(routineCard).join("") + "</div>" : "";
+      }).join("") + "</div></section>";
+  }
+  function postersSection(sp) {
+    var ids = routinesFor(sp);
+    var ex = subjectPosters(function (p) { return p.subjectId === sp.id; });
+    var shared = ids.map(posterById).filter(function (p) { return p && !p.subject; });
+    if (sp.kind === "lead") shared = sharedPosters().filter(function (p) { return p.area === sp.area; });
+    var h = '<section class="section" id="posters"><div class="wrap"><h2>Posters</h2>';
+    if (ex.length) h += "<h3>" + esc(sp.name) + ' examples</h3><div class="poster-grid">' + ex.map(subjectTile).join("") + "</div>";
+    h += '<h3>Classroom posters for these routines</h3><div class="poster-grid">' + shared.map(function (p) { return tile(classroomHref(p), classroomPoster(p), p.title, "Classroom poster"); }).join("") + "</div>" +
+      '<p><a class="btn btn-outline" href="#/posters?set=staff">Staff guides for every target →</a></p></div></section>';
+    return h;
+  }
+  function subjectHero(sp, actions) {
+    return '<div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="#/subjects">Subjects</a> › ' + esc(sp.name) + "</nav></div>" +
+      '<section class="hero" style="margin-top:12px"><div class="wrap"><div class="kicker">Subjects</div><h1>' + esc(sp.name) + '</h1><p class="lead">' + esc(sp.blurb) + '</p><div class="actions">' +
+      actions.map(function (a, i) { return '<a class="btn ' + (i ? "btn-ghost" : "btn-light") + '" href="' + a[0] + '">' + esc(a[1]) + "</a>"; }).join("") + "</div></div></section>";
+  }
+
+  function renderSubjects() {
+    var h = '<section class="hero"><div class="wrap"><div class="kicker">Subjects</div><h1>Literacy and numeracy in your subject</h1>' +
+      '<p class="lead">One page for each teacher: what literacy and numeracy look like in your subject at every stage, the routines to use, and the posters for your room.</p></div></section>';
+    h += '<section class="section"><div class="wrap"><h2>Leading subjects</h2><div class="grid-3">' +
+      SUBJECT_PAGES.filter(function (sp) { return sp.kind !== "subject"; }).map(subjectCard).join("") + "</div>" +
+      '<h2 style="margin-top:28px">Every other subject</h2><div class="grid-2">' +
+      SUBJECT_PAGES.filter(function (sp) { return sp.kind === "subject"; }).map(subjectCard).join("") + "</div>" +
+      '<p class="callout info" style="margin-top:18px">The Arts and Languages, numeracy in English, and literacy in Mathematics are not yet mapped. They can be added the same way.</p></div></section>';
+    page("subjects", "Subjects", h);
+  }
+  function subjectCard(sp) {
+    var n = routinesFor(sp).length;
+    return '<a class="card subject-card" href="#/subject/' + sp.id + '"><h3>' + esc(sp.name) + " →</h3><p>" + esc(sp.blurb) + '</p><span class="small muted">' + n + " shared routines" + (sp.kind === "subject" ? " · 24 stage strategies" : "") + "</span></a>";
+  }
+
+  function renderSubject(id) {
+    var sp = subjectPage(id);
+    if (!sp) return renderNotFound();
+    var h;
+    if (sp.kind === "subject") {
+      var subj = subject(sp.id);
+      h = subjectHero(sp, [["#literacy", "Literacy strategies"], ["#numeracy", "Numeracy strategies"], ["#routines", "Routines"], ["#posters", "Posters"]]);
+      if (sp.note) h += '<div class="wrap"><p class="callout info" style="margin-top:18px">' + md(sp.note) + "</p></div>";
+      ["literacy", "numeracy"].forEach(function (a) {
+        var A = C[a];
+        h += '<section class="section" id="' + a + '"><div class="wrap"><h2>' + esc(A.name) + " in " + esc(sp.name) + "</h2>" +
+          '<p class="section-intro">' + (a === "numeracy" ? "In every subject other than Mathematics: <strong>identify</strong> the maths, <strong>check the prerequisite</strong> before the unit, and <strong>model applying it</strong>. Don’t re-teach Mathematics. " : "") +
+          "<strong>Link</strong> is what " + esc(sp.name) + "’s own achievement standard asks for; <em>grey italic</em> means it isn’t required there, so the strategy is an opportunity. Click a cell for the full guide.</p>" +
+          linkGrid(A, C.stages, function (s, d) {
+            var c = A.subjectCells[subj.id][s.id][d.id];
+            return '<span class="lnk' + (c.gap ? " gap" : "") + '"><b>Link:</b> ' + md(c.l) + '</span><span class="strat"><b>Strategy:</b> ' + md(c.s) + "</span>";
+          }, function (s, d) { return targetHref(a, s.id, d.id, subj.id); }, sp.name + " › " + A.name) +
+          '<p class="small" style="margin-top:8px"><a href="#/progressions?set=subjects&subject=' + subj.id + "&kind=" + a + '">' + esc(sp.name) + "’s " + esc(A.name.toLowerCase()) + " evidence, year by year →</a></p>" +
+          "</div></section>";
+      });
+    } else if (sp.kind === "lead") {
+      var A = C[sp.area], other = sp.area === "literacy" ? "numeracy" : "literacy";
+      h = subjectHero(sp, [["#teach", "How " + sp.name + " teaches it"], ["#routines", "Routines"], ["#posters", "Posters"], ["#/" + sp.area, A.name + " information"]]);
+      h += '<section class="section" id="teach"><div class="wrap"><h2>How ' + esc(sp.name) + " teaches " + esc(A.name.toLowerCase()) + "</h2>" +
+        '<p class="section-intro">' + md(A.leadWho) + " Each cell shows the target and the explicit teaching behind it. Click a cell for the full guide.</p>" +
+        linkGrid(A, C.stages, function (s, d) { return '<span class="lnk"><b>Target:</b> ' + md(A.targets[s.id][d.id]) + '</span><span class="strat"><b>' + esc(sp.name) + ":</b> " + md(A.method[s.id][d.id]) + "</span>"; },
+          function (s, d) { return targetHref(sp.area, s.id, d.id, "method"); }, sp.name + " method") +
+        '<p class="callout info" style="margin-top:14px">' + esc(C[other].name) + " in " + esc(sp.name) + " is not yet mapped. It is listed in the Framework’s questions for review.</p>" +
+        "</div></section>";
+    } else {
+      h = subjectHero(sp, [["#literacy", "Literacy, P–6"], ["#numeracy", "Numeracy, P–6"], ["#routines", "Routines"], ["#posters", "Posters"]]);
+      h += '<div class="wrap"><p class="callout info" style="margin-top:18px">Specialist teachers in the Junior School (for example Science or Health and PE) will find their strategies on their own subject page.</p></div>';
+      var p6 = C.stages.filter(function (s) { return s.id === "foundational" || s.id === "developing"; });
+      ["literacy", "numeracy"].forEach(function (a) {
+        var A = C[a];
+        h += '<section class="section" id="' + a + '"><div class="wrap"><h2>' + esc(A.name) + ", Prep to Year 6</h2>" +
+          '<p class="section-intro">The target for each stage and how the class teacher teaches it in ' + esc(A.lead) + " time. Click a cell for the full guide.</p>" +
+          linkGrid(A, p6, function (s, d) { return '<span class="lnk"><b>Target:</b> ' + md(A.targets[s.id][d.id]) + '</span><span class="strat"><b>Class teacher:</b> ' + md(A.method[s.id][d.id]) + "</span>"; },
+            function (s, d) { return targetHref(a, s.id, d.id, "method"); }, "Junior School › " + A.name) +
+          "</div></section>";
+      });
+    }
+    h += routinesSection(sp) + postersSection(sp);
+    page("subjects", sp.name, h);
+    fitPosters();
+    var jumps = main.querySelectorAll('.hero a[href^="#"]:not([href^="#/"])');
+    for (var i = 0; i < jumps.length; i++) jumps[i].addEventListener("click", function (e) { e.preventDefault(); scrollToId(e.currentTarget.getAttribute("href").slice(1)); });
   }
 
   /* ---------- target page ---------- */
@@ -451,7 +581,7 @@
       '<span class="label">Strategy for ' + esc(subj.name) + " teachers</span>" +
       '<p class="strat">' + md(c.s) + "</p>" +
       (subj.note ? '<p class="small muted" style="margin:0">' + md(subj.note) + "</p>" : "") +
-      '<p class="small" style="margin:8px 0 0"><a href="#/progressions?set=subjects&subject=' + subj.id + "&kind=" + A.id + '">See ' + esc(subj.name) + "'s year-by-year evidence →</a></p>";
+      '<p class="small" style="margin:8px 0 0"><a class="btn btn-outline" href="#/subject/' + subj.id + "#" + A.id + '">All of ' + esc(subj.name) + "’s " + esc(A.name.toLowerCase()) + ' strategies →</a> <a href="#/progressions?set=subjects&subject=' + subj.id + "&kind=" + A.id + '">' + esc(subj.name) + "’s year-by-year evidence →</a></p>";
   }
 
   function miniNav(A, sId, dId) {
@@ -699,7 +829,7 @@
       "</div></details>";
     h += "</div></section>";
 
-    page("progressions", "Progressions", h);
+    page("framework", "Progressions", h);
 
     var sel = document.getElementById("subj-sel");
     if (sel) sel.addEventListener("change", function () { location.hash = "#/progressions?set=subjects&subject=" + sel.value + "&kind=" + (q.get("kind") || "literacy"); });
@@ -745,17 +875,26 @@
     return stages.map(function (sid) { var s = stage(sid); return '<span class="pill stage-' + sid + '">' + esc(s.name) + "</span>"; }).join(" ");
   }
 
-  function renderImplementation(q) {
-    var I = C.implementation;
+  /* ---------- resources: shared tools for every subject ---------- */
+  function renderResources(q) {
     var area = q.get("area") || "all";
-    var h = '<section class="hero"><div class="wrap"><div class="kicker">From framework to classroom</div><h1>Implementation</h1>' +
-      '<p class="lead">How the targets reach every classroom: shared routines, who is responsible, how progress is measured, and what still needs to be decided.</p></div></section>';
+    var byArea = q.get("by") === "numeracy" ? "numeracy" : "literacy";
+    var h = '<section class="hero"><div class="wrap"><div class="kicker">Resources</div><h1>Shared resources</h1>' +
+      '<p class="lead">The routines, teaching moves and posters every subject uses, so students meet the same practices and the same words in every room.</p>' +
+      '<div class="actions"><a class="btn btn-light" href="#/resources#routines">Shared routines</a><a class="btn btn-ghost" href="#/resources#by-target">Routines by target</a><a class="btn btn-ghost" href="#/resources#moves">Teaching moves</a><a class="btn btn-ghost" href="#/resources#posters">Posters</a></div></div></section>';
 
-    h += '<section class="section" id="layers"><div class="wrap"><h2>Three layers for every target</h2><div class="grid-3 layers">' +
-      '<div class="card layer"><h3>Target</h3><p class="small" style="margin:0">What a student can do by the end of the stage. One per domain per stage, matching Framework Tables 3 and 6.</p></div>' +
-      '<div class="card layer"><h3>Lead method</h3><p class="small" style="margin:0">How English (literacy) or Mathematics (numeracy) teaches it explicitly. The Junior School class teacher leads P–6.</p></div>' +
-      '<div class="card layer"><h3>Subject strategy</h3><p class="small" style="margin:0">What Science, Humanities, Health and PE, and Technologies teachers do, grounded in each subject’s own achievement standard.</p></div>' +
+    h += '<section class="section" id="routines"><div class="wrap"><h2>Shared routines</h2><p class="section-intro">The same routine, the same words, in every room. Each routine links to the targets it supports.</p><div class="tabs">' +
+      [["all", "All"], ["literacy", "Literacy"], ["numeracy", "Numeracy"]].map(function (a) {
+        return '<a class="tab" aria-selected="' + (a[0] === area) + '" href="#/resources?area=' + a[0] + '#routines">' + a[1] + "</a>";
+      }).join("") + '</div><div class="grid-3">' +
+      Object.keys(C.routines).filter(function (id) { return area === "all" || C.routines[id].area === area; }).map(routineCard).join("") +
       "</div></div></section>";
+
+    h += '<section class="section" id="by-target"><div class="wrap"><h2>Routines by target</h2>' +
+      '<p class="section-intro">Find your stage and domain to see which routines put that target into practice. Click a routine for how it works, or open the guide for the whole target.</p><div class="tabs">' +
+      ["literacy", "numeracy"].map(function (k) {
+        return '<a class="tab" aria-selected="' + (k === byArea) + '" href="#/resources?area=' + area + "&by=" + k + '#by-target">' + C[k].name + "</a>";
+      }).join("") + "</div>" + routineGrid(C[byArea]) + "</div></section>";
 
     h += '<section class="section" id="moves"><div class="wrap"><h2>Teaching moves</h2>' +
       '<p class="section-intro">Six moves recur across every routine and classroom idea. The symbols appear beside each one, on the guide pages and on the posters, so the same moves are easy to spot everywhere. Click one to see everywhere it is used.</p>' +
@@ -763,69 +902,13 @@
         return '<a class="card move-card" href="#/move/' + m.id + '">' + moveIcon(m.id, 30) + "<div><h3>" + esc(m.name) + '</h3><p class="move-short">' + esc(m.short) + '</p><p class="small" style="margin:0">' + md(m.def) + "</p></div></a>";
       }).join("") + "</div></div></section>";
 
-    h += '<section class="section"><div class="wrap"><div class="card resources-jump"><h2 style="margin:0 0 6px">Jump to resources</h2><p class="small muted" style="margin:0 0 10px">At the bottom of this page:</p><div class="chips">' +
-      '<a class="chip" href="#/implementation?area=' + area + '#by-target">Routines by target</a>' +
-      '<a class="chip" href="#/implementation?area=' + area + '#routines">Shared routines</a>' +
-      '<a class="chip" href="#/implementation?area=' + area + '#posters">Posters</a></div></div></div></section>';
-
-    var postersSec = '<section class="section" id="posters"><div class="wrap"><h2>Posters</h2><p class="section-intro">Ready to print, and viewable here.</p><div class="grid-2">' +
-      '<a class="card poster-promo" href="#/posters?set=classroom"><div class="promo-thumbs">' + P.classroom.slice(2, 5).map(function (p) { return frame(classroomPoster(p), "thumb"); }).join("") + '</div><h3>Classroom posters</h3><p>' + sharedPosters().length + " shared practices in student language, one design for every room, plus " + subjectPosters().length + " subject examples.</p></a>" +
+    h += '<section class="section" id="posters"><div class="wrap"><h2>Posters</h2><p class="section-intro">Ready to print, and viewable here.</p><div class="grid-3">' +
+      '<a class="card poster-promo" href="#/posters?set=classroom"><div class="promo-thumbs">' + ["cer", "bda", "no-unit"].map(posterById).filter(Boolean).map(function (p) { return frame(classroomPoster(p), "thumb"); }).join("") + "</div><h3>Classroom posters</h3><p>" + sharedPosters().length + " shared practices in student language, one design for every room.</p></a>" +
+      '<a class="card poster-promo" href="#/posters?set=subject"><div class="promo-thumbs">' + subjectPosters().slice(0, 3).map(function (p) { return frame(classroomPoster(p), "thumb"); }).join("") + "</div><h3>Subject examples</h3><p>" + subjectPosters().length + " shared practices applied in one subject and year level.</p></a>" +
       '<a class="card poster-promo" href="#/posters?set=staff"><div class="promo-thumbs">' + [["literacy", "consolidating", "writing"], ["numeracy", "developing", "mg"], ["literacy", "foundational", "reading"]].map(function (x) { return frame(staffPoster(C[x[0]], stage(x[1]), domain(C[x[0]], x[2])), "thumb"); }).join("") + "</div><h3>Staff guides</h3><p>" + staffList().length + " targets, one page each: what it looks like, the routines, the ideas and what every subject does.</p></a>" +
       "</div></div></section>";
 
-    var resources = '<section class="section" id="routines"><div class="wrap"><h2>Shared routines</h2><p class="section-intro">The same routine, the same words, in every room. Each routine links to the targets it supports.</p><div class="tabs">' +
-      [["all", "All"], ["literacy", "Literacy"], ["numeracy", "Numeracy"]].map(function (a) {
-        return '<a class="tab" aria-selected="' + (a[0] === area) + '" href="#/implementation?area=' + a[0] + '#routines">' + a[1] + "</a>";
-      }).join("") + '</div><div class="grid-3">';
-    Object.keys(C.routines).forEach(function (id) {
-      var R = C.routines[id];
-      if (area !== "all" && R.area !== area) return;
-      var rp = posterById(id);
-      resources += '<a class="card routine-card ' + R.area + (rp ? " has-poster" : "") + '" href="#/routine/' + id + '"><div><h3>' + esc(R.t) + "</h3>" + moveBadges(C.routineMoves[id]) + "<p>" + md(R.what) + '</p><div class="meta">' + stagePills(R.stages) +
-        (R.status ? ' <span class="pill warn">' + esc(R.status) + "</span>" : "") + "</div></div>" +
-        (rp ? '<div class="rc-thumb">' + frame(classroomPoster(rp), "thumb") + "</div>" : "") + "</a>";
-    });
-    resources += "</div></div></section>";
-
-    var byArea = q.get("by") === "numeracy" ? "numeracy" : "literacy";
-    var byTarget = '<section class="section" id="by-target"><div class="wrap"><h2>Routines by target</h2>' +
-      '<p class="section-intro">Find your stage and domain to see which routines put that target into practice. Click a routine for how it works, or open the guide for the whole target.</p><div class="tabs">' +
-      ["literacy", "numeracy"].map(function (k) {
-        return '<a class="tab" aria-selected="' + (k === byArea) + '" href="#/implementation?area=' + area + "&by=" + k + '#by-target">' + C[k].name + "</a>";
-      }).join("") + "</div>" + routineGrid(C[byArea]) + "</div></section>";
-
-    h += '<section class="section" id="tier2"><div class="wrap"><h2>Tier 2 referral points</h2><p class="section-intro">Points where students not yet secure in a constrained skill are referred for Tier 2 support. They are built into the targets and feed the Tier 1–3 intervention plan, which is still to be written.</p>' +
-      ["literacy", "numeracy"].map(function (a) {
-        var pts = I.tier2.filter(function (t) { return t.area === a; });
-        var proposed = pts.some(function (t) { return t.proposed; });
-        return "<h3 style=\"margin-top:18px\">" + esc(C[a].name) + (proposed ? ' <span class="pill warn">Proposed</span>' : "") + "</h3>" +
-          (proposed ? '<p class="small muted">Each sits where the progressions show a constrained numeracy skill concluding. Thresholds to be agreed with the Mathematics Head of Department and the Diverse Learners team.</p>' : "") +
-          '<div class="tier-list">' + pts.map(function (t) { return '<a class="card tier' + (t.proposed ? " proposed" : "") + '" href="' + t.link + '"><b>' + esc(t.when) + "</b><span>" + md(t.what) + "</span></a>"; }).join("") + "</div>";
-      }).join("") + "</div></section>";
-
-    h += '<section class="section" id="data-tracking"><div class="wrap"><h2>Data tracking map</h2><p class="section-intro">What evidence tracks student progress against the targets at each stage. NAPLAN falls at the stage boundaries: Year 3 starts Developing, Year 5 is mid-Developing, Year 7 starts Consolidating and Year 9 ends it.</p><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Stage</th><th>Target year</th><th>Standardised evidence</th><th>Teacher-judgement evidence</th><th>To resolve in the data audit</th></tr></thead><tbody>';
-    I.measurement.forEach(function (m) {
-      h += '<tr><td class="stage-td stage-' + m.stage + '">' + esc(stage(m.stage).name) + "</td><td>" + esc(m.year) + "</td><td>" + md(m.standardised) + "</td><td>" + md(m.teacher) + "</td><td>" + md(m.gaps) + "</td></tr>";
-    });
-    h += "</tbody></table></div></div></section>";
-
-    h += '<section class="section" id="roles"><div class="wrap"><div class="grid-2"><div class="card"><h2>Roles and accountability</h2><div class="tbl-wrap" style="box-shadow:none"><table class="tbl"><tbody>' +
-      I.roles.map(function (r) { return "<tr><td><strong>" + esc(r.role) + "</strong></td><td>" + md(r.resp) + "</td></tr>"; }).join("") +
-      '</tbody></table></div><p class="small muted" style="margin:10px 0 0">Role titles are indicative and still to be reconciled with TGS position titles.</p></div>';
-    h += '<div class="card" id="next-steps"><h2>Next steps</h2><ul class="next-list">' +
-      I.nextSteps.map(function (n) {
-        var cls = n.status === "Drafted" ? "ok" : n.status === "Next" ? "next" : "";
-        return '<li><span class="pill ' + cls + '">' + esc(n.status) + "</span><div><strong>" + esc(n.t) + '</strong><div class="small muted">' + md(n.d) + "</div></div></li>";
-      }).join("") + "</ul></div></div></div></section>";
-
-    h += '<section class="section" id="questions"><div class="wrap"><div class="card"><h2>Questions for review</h2><ol>' +
-      I.questions.map(function (x) { return "<li>" + md(x) + "</li>"; }).join("") + "</ol></div></div></section>";
-
-    h += '<div class="resources-band" id="resources"><div class="wrap"><div class="kicker">Implementation</div><h1>Resources</h1>' +
-      '<p class="lead">Routines matched to every target, the shared routines themselves, and the posters.</p></div></div>';
-    h += byTarget + resources + postersSec;
-
-    page("implementation", "Implementation", h);
+    page("resources", "Resources", h);
     fitPosters();
   }
 
@@ -833,7 +916,7 @@
     var R = C.routines[id];
     if (!R) return renderNotFound();
     var uses = routineUses(id);
-    var h = '<div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="#/implementation">Implementation</a> › <a href="#/implementation?area=' + R.area + '#routines">Shared routines</a> › ' + esc(R.t) + "</nav></div>";
+    var h = '<div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="#/resources">Resources</a> › <a href="#/resources?area=' + R.area + '#routines">Shared routines</a> › ' + esc(R.t) + "</nav></div>";
     h += '<section class="hero" style="margin-top:12px"><div class="wrap"><div class="kicker">' + esc(C[R.area].name) + " routine · " + esc(R.who) + "</div><h1>" + esc(R.t) + '</h1><p class="lead">' + md(R.what) + "</p>" +
       '<div style="margin-top:10px">' + stagePills(R.stages) + (R.status ? ' <span class="pill warn">' + esc(R.status) + "</span>" : "") + "</div>" +
       '<div class="hero-moves"><span>Teaching moves:</span>' + moveBadges(C.routineMoves[id], true, true) + "</div></div></section>";
@@ -856,7 +939,7 @@
       }).join("") + "</ul>" : '<p class="small muted">Used across subjects; not tied to a single target.</p>') +
       "</div>";
     h += "</aside></div></div>";
-    page("implementation", R.t, h);
+    page("resources", R.t, h);
     fitPosters();
     setTimeout(fitPosters, 50);
   }
@@ -909,7 +992,7 @@
   function renderMove(id) {
     var m = moveById(id);
     if (!m) return renderNotFound();
-    var h = '<div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="#/implementation">Implementation</a> › <a href="#/implementation#moves">Teaching moves</a> › ' + esc(m.name) + "</nav></div>";
+    var h = '<div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="#/resources">Resources</a> › <a href="#/resources#moves">Teaching moves</a> › ' + esc(m.name) + "</nav></div>";
     h += '<section class="hero" style="margin-top:12px"><div class="wrap"><div class="kicker">Teaching move</div><h1 class="move-h1">' + moveIcon(id, 40) + esc(m.name) + '</h1><p class="lead"><strong>' + esc(m.short) + ".</strong> " + md(m.def) + "</p>" +
       '<div class="move-switch">' + moveBadges(C.moves.map(function (x) { return x.id; }), true, true) + "</div></div></section>";
     var routines = Object.keys(C.routines).filter(function (r) { return (C.routineMoves[r] || []).indexOf(id) >= 0; });
@@ -930,7 +1013,7 @@
       found.map(function (f) {
         return '<tr><td style="white-space:nowrap"><span class="pill stage-' + f.s.id + '">' + esc(f.s.name) + '</span><br><a href="' + targetHref(f.a, f.s.id, f.d.id) + '">' + esc(C[f.a].name + " · " + f.d.name) + "</a></td><td><strong>" + md(f.i.t) + "</strong> " + moveBadges(ideaMoves(f.i.t)) + '<div class="small muted">' + md(f.i.d) + "</div></td></tr>";
       }).join("") + "</tbody></table></div></div></section>";
-    page("implementation", m.name, h);
+    page("resources", m.name, h);
   }
   function icon(name, size) {
     return '<svg viewBox="0 0 24 24" width="' + size + '" height="' + size + '" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONS[name] || ICONS.lines) + "</svg>";
@@ -1022,8 +1105,8 @@
 
   function renderPosterGallery(q) {
     var set = q.get("set") === "staff" ? "staff" : q.get("set") === "subject" ? "subject" : "classroom";
-    var h = '<div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="#/implementation">Implementation</a> › Posters</nav></div>' +
-      '<section class="hero" style="margin-top:12px"><div class="wrap"><div class="kicker">Implementation</div><h1>Posters</h1>' +
+    var h = '<div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="#/resources">Resources</a> › Posters</nav></div>' +
+      '<section class="hero" style="margin-top:12px"><div class="wrap"><div class="kicker">Resources</div><h1>Posters</h1>' +
       '<p class="lead"><strong>Classroom posters</strong> show the shared practices in student language, the same design in every room. <strong>Staff guides</strong> give each target on one page: what it looks like, the routines, the ideas and what every subject does.</p></div></section>';
     h += '<section class="section"><div class="wrap"><div class="tabs">' +
       '<a class="tab" aria-selected="' + (set === "classroom") + '" href="#/posters?set=classroom">Classroom posters (' + sharedPosters().length + ")</a>" +
@@ -1055,7 +1138,7 @@
       });
     }
     h += "</div></section>";
-    page("implementation", "Posters", h);
+    page("resources", "Posters", h);
     fitPosters();
   }
 
@@ -1078,11 +1161,11 @@
     if (!p) return renderNotFound();
     var list = p.subject ? subjectPosters() : sharedPosters();
     var i = list.indexOf(p), prev = list[i - 1], next = list[i + 1];
-    var h = '<div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="#/implementation">Implementation</a> › ' +
+    var h = '<div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="#/resources">Resources</a> › ' +
       (p.subject ? '<a href="#/posters?set=subject">Subject examples</a>' : '<a href="#/posters?set=classroom">Classroom posters</a>') + " › " + esc(p.title) + "</nav>" +
       posterToolbar(prev && classroomHref(prev), next && classroomHref(next), p.title, classroomPdf(p), '<a class="btn btn-outline" href="#/routine/' + p.routine + '">How the routine works</a>') +
       '<div class="poster-stage">' + frame(classroomPoster(p)) + "</div></div>";
-    page("implementation", p.title + " poster", h);
+    page("resources", p.title + " poster", h);
     afterPoster();
   }
 
@@ -1092,10 +1175,10 @@
     var list = staffList(), i = -1;
     list.forEach(function (x, k) { if (x.A.id === a && x.s.id === sId && x.d.id === dId) i = k; });
     var prev = list[i - 1], next = list[i + 1];
-    var h = '<div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="#/implementation">Implementation</a> › <a href="#/posters?set=staff">Staff guides</a> › ' + esc(A.name + " · " + s.name + " · " + d.name) + "</nav>" +
+    var h = '<div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="#/resources">Resources</a> › <a href="#/posters?set=staff">Staff guides</a> › ' + esc(A.name + " · " + s.name + " · " + d.name) + "</nav>" +
       posterToolbar(prev && staffHref(prev.A.id, prev.s.id, prev.d.id), next && staffHref(next.A.id, next.s.id, next.d.id), "", staffPdf(a, sId, dId), '<a class="btn btn-outline" href="' + targetHref(a, sId, dId) + '">Open the full guide</a>') +
       '<div class="poster-stage">' + frame(staffPoster(A, s, d)) + "</div></div>";
-    page("implementation", s.name + " " + d.name + " staff guide", h);
+    page("resources", s.name + " " + d.name + " staff guide", h);
     afterPoster();
   }
 
@@ -1104,6 +1187,27 @@
   }
 
   /* ---------- router ---------- */
+  var FRAMEWORK_ANCHORS = ["layers", "stages", "areas", "why", "documents", "tier2", "data-tracking", "roles", "next-steps", "questions"];
+  function redirectFor(parts, q, anchor) {
+    var a = anchor ? "#" + anchor : "";
+    if (parts[0] === "overview") return "#/framework" + (anchor === "posters-preview" ? "" : a).replace(/^$/, "");
+    if (parts[0] === "implementation") {
+      if (anchor && FRAMEWORK_ANCHORS.indexOf(anchor) >= 0) return "#/framework" + a;
+      var keep = [];
+      if (q.get("area")) keep.push("area=" + q.get("area"));
+      if (q.get("by")) keep.push("by=" + q.get("by"));
+      return "#/resources" + (keep.length ? "?" + keep.join("&") : "") + a;
+    }
+    if ((parts[0] === "literacy" || parts[0] === "numeracy") && parts.length === 1) {
+      var v = q.get("view");
+      if (v && subject(v)) return "#/subject/" + v + "#" + parts[0];
+      if (v === "method") return "#/" + parts[0] + "#teach";
+      if (v === "routines") return "#/resources?by=" + parts[0] + "#by-target";
+      if (anchor === "classroom-posters") return "#/posters?set=classroom";
+    }
+    return null;
+  }
+
   function route() {
     var raw = location.hash.replace(/^#\/?/, "");
     var anchor = null;
@@ -1116,17 +1220,23 @@
     var parts = path.split("/").filter(Boolean);
     var samePath = path === lastPath;
 
+    // Old addresses (before the site was reorganised) are sent to their new home.
+    var moved = redirectFor(parts, q, anchor);
+    if (moved) { location.replace(moved); return; }
+
     document.body.classList.remove("poster-view");
     try {
       if (parts.length === 0) renderHome();
-      else if (parts[0] === "overview") renderOverview();
+      else if (parts[0] === "framework") renderFramework();
+      else if (parts[0] === "subjects") renderSubjects();
+      else if (parts[0] === "subject" && parts[1]) renderSubject(parts[1]);
+      else if (parts[0] === "resources") renderResources(q);
       else if (parts[0] === "posters") renderPosterGallery(q);
       else if (parts[0] === "poster" && parts[1] === "classroom" && parts[2]) renderClassroomPoster(parts[2]);
       else if (parts[0] === "poster" && parts[1] === "staff" && parts.length === 5) renderStaffPoster(parts[2], parts[3], parts[4]);
       else if ((parts[0] === "literacy" || parts[0] === "numeracy") && parts.length === 1) renderArea(parts[0], q);
       else if ((parts[0] === "literacy" || parts[0] === "numeracy") && parts.length === 3) renderTarget(parts[0], parts[1], parts[2], q);
       else if (parts[0] === "progressions") renderProgressions(q);
-      else if (parts[0] === "implementation") renderImplementation(q);
       else if (parts[0] === "routine" && parts[1]) renderRoutine(parts[1]);
       else if (parts[0] === "move" && parts[1]) renderMove(parts[1]);
       else renderNotFound();
