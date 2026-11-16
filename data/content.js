@@ -34,7 +34,19 @@ window.CONTENT = {
   ],
 
   overview: {
-    intention: "A boy at Toowoomba Grammar School moves through thirteen year levels and dozens of classrooms. A shared, deliberate approach to reading, writing, speaking and using numbers means this learning is not left to chance: what he practises in Science or History strengthens the same skills he is building in English and Mathematics.",
+    // Home page rationale, adapted from the Framework introduction (sections 1 and 1.1).
+    rationale: "Toowoomba Grammar School teaches literacy and numeracy explicitly and consistently, in every year level and every subject, from Prep to Year 12. In a P–12 boarding school, students move through thirteen year levels, two schools and dozens of classrooms. Consistency between year levels, subjects and schools is what makes this approach work.",
+    principles: [
+      { t: "One shared approach, Prep to Year 12", d: "Four developmental stages and the same language in every classroom, so what a student learns in one year and one subject builds on the last." },
+      { t: "English and Mathematics lead; every subject applies", d: "English and Mathematics carry the main explicit teaching. Every other subject has a genuine, defined role in reinforcing and applying it." },
+      { t: "Explicit teaching, grounded in research", d: "Skills are taught explicitly, consistent with the science of learning, and written alongside the TGS professional development program." }
+    ],
+    // Adapted from the TGS Literacy and Numeracy Statement (plain language, no citations).
+    statementLiteracy: "Literacy is a student's capacity to understand, speak, listen, read and write with confidence and precision, in ways that grow more sophisticated as they move through school. English is where these skills are built; every other subject gives students a genuine opportunity to use and strengthen them. A historian, a scientist and a mathematician each read and write differently, and TGS teaches students to do so with skill in every context.",
+    literacyGoal: "A full, cohesive literacy program that helps every student become a more capable speaker, listener, reader and writer.",
+    statementNumeracy: "Numeracy is a student's capacity to recognise, use and reason with mathematical ideas in real situations: not only in the Mathematics classroom, but wherever number, measurement, data and pattern genuinely appear. Mathematics builds the underlying skills; every other subject gives students a genuine opportunity to recognise and apply them.",
+    numeracyGoal: "A numeracy-aware curriculum across every subject, so real opportunities to use mathematics are never overlooked, and students learn to ground real-world decisions in sound mathematical reasoning.",
+    intention: "A boy at Toowoomba Grammar School moves through thirteen year levels and dozens of classrooms. A shared, deliberate approach to reading, writing, speaking and using numbers means this critical learning is not left to chance: what he practises in Science or History strengthens the same skills he is building in English and Mathematics.",
     goal: "A boy who reaches Year 12 having practised these same expectations in every subject, every year, is far better prepared to use literacy and numeracy in the real world than one who has met them only sometimes, and only somewhere. That consistency is what this Framework exists to protect.",
     why: [
       "Literacy and numeracy shape success in almost every area of learning, so they cannot belong to one subject.",

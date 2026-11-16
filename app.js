@@ -123,52 +123,113 @@
   }
 
   /* ---------- home (landing page and site map) ---------- */
-  function sitemapLists(key) {
-    var items = subnavItems(key) || [], h = "", group = null, open = false;
+  // Site-map groups for one section, as labelled columns. Built from subnavItems() so they match the section bars.
+  function sitemapGroups(key) {
+    var items = subnavItems(key) || [], groups = [], cur = { label: "Sections", links: [] };
     items.forEach(function (it) {
       if (it.sep !== undefined) {
-        if (open) h += "</ul>";
-        h += it.sep ? "<h3>" + esc(it.sep) + "</h3>" : "";
-        h += "<ul>"; open = true; return;
+        if (cur.links.length) groups.push(cur);
+        cur = { label: it.sep || "More", links: [] };
+        return;
       }
-      if (!open) { h += "<ul>"; open = true; }
-      h += '<li><a href="' + it.h + '">' + esc(it.t) + "</a></li>";
+      cur.links.push(it);
     });
-    return h + (open ? "</ul>" : "");
+    if (cur.links.length) groups.push(cur);
+    return groups.map(function (g) {
+      return '<div class="sm-group"><h3>' + esc(g.label) + "</h3><ul>" + g.links.map(function (it) { return '<li><a href="' + it.h + '">' + esc(it.t) + "</a></li>"; }).join("") + "</ul></div>";
+    }).join("");
   }
   function miniTargets(a) {
     var A = C[a];
-    var h = '<h3>Every target</h3><div class="sm-targets"><span></span>' + A.domains.map(function (d) { return '<span class="h" title="' + esc(d.name) + '">' + esc(TINY[d.id]) + "</span>"; }).join("");
+    var h = '<div class="sm-group sm-group-wide"><h3>Every target</h3><div class="sm-targets"><span></span>' + A.domains.map(function (d) { return '<span class="h">' + esc(d.name) + "</span>"; }).join("");
     C.stages.forEach(function (s) {
       h += '<span class="s stage-' + s.id + '">' + esc(s.name) + "</span>";
-      A.domains.forEach(function (d) { h += '<a href="' + targetHref(a, s.id, d.id) + '" title="' + esc(s.name + " · " + d.name) + '">' + esc(s.years.replace("Years ", "Yr ")) + "</a>"; });
+      A.domains.forEach(function (d) { h += '<a href="' + targetHref(a, s.id, d.id) + '" title="' + esc(s.name + " · " + d.name) + '">' + esc(s.years) + "</a>"; });
     });
-    return h + "</div>";
+    return h + "</div></div>";
+  }
+  function domainStrip(A) {
+    return '<div class="dom-strip">' + A.domains.map(function (d) {
+      return '<a class="dom-card" href="#/' + A.id + '#domains">' + icon(DOMAIN_ICON[d.id], 30) + "<b>" + esc(d.name) + "</b><span>" + esc(d.plain) + "</span></a>";
+    }).join("") + "</div>";
   }
   function renderHome() {
+    var o = C.overview;
+    var count = function (obj) { return Object.keys(obj).length; };
+    var targets = 0;
+    ["literacy", "numeracy"].forEach(function (a) { targets += C.stages.length * C[a].domains.length; });
+
+    // 1. The start
     var h = '<section class="hero"><div class="wrap">' +
       '<div class="kicker">' + esc(C.meta.school) + " · " + esc(C.meta.status) + "</div>" +
       "<h1>Literacy and Numeracy Framework</h1>" +
       '<p class="lead">What every student should be able to do at each stage from Prep to Year 12, how English and Mathematics teach it, and what every other subject does, with the routines, posters and curriculum links behind it.</p>' +
-      '<form class="home-find" id="find-target" aria-label="Find a target">' +
-        '<label>Area<select name="area"><option value="literacy">Literacy</option><option value="numeracy">Numeracy</option></select></label>' +
-        '<label>Stage<select name="stage">' + C.stages.map(function (s) { return '<option value="' + s.id + '">' + esc(s.name + " (" + s.years + ")") + "</option>"; }).join("") + "</select></label>" +
-        '<label>Domain<select name="domain"></select></label>' +
-        '<button class="btn btn-light" type="submit">Open the target</button></form>' +
-      '<div class="home-subjects"><span>Literacy in your subject</span><a href="#/literacy?view=method#grid">English</a>' + C.subjects.map(function (s) { return '<a href="#/literacy?view=' + s.id + '#grid">' + esc(s.name) + "</a>"; }).join("") + "</div>" +
-      '<div class="home-subjects"><span>Numeracy in your subject</span><a href="#/numeracy?view=method#grid">Mathematics</a>' + C.subjects.map(function (s) { return '<a href="#/numeracy?view=' + s.id + '#grid">' + esc(s.name) + "</a>"; }).join("") + "</div>" +
+      '<div class="actions"><a class="btn btn-light" href="#find">Find your way</a><a class="btn btn-ghost" href="#/overview">Read the overview</a></div>' +
       "</div></section>";
 
-    var card = function (key, title, href, desc, extra) {
-      return '<div class="card"><h2><a href="' + href + '">' + esc(title) + ' →</a></h2><p class="sm-desc">' + esc(desc) + "</p>" + sitemapLists(key) + (extra || "") + "</div>";
+    // 2. Rationale
+    h += '<section class="section home-rationale" id="rationale"><div class="wrap">' +
+      '<div class="kicker-dark">Why this Framework</div>' +
+      '<p class="rationale-statement">' + md(o.rationale) + "</p>" +
+      '<div class="grid-3 principles">' + o.principles.map(function (p, i) {
+        return '<div class="card principle"><span class="pr-num">' + (i + 1) + "</span><h3>" + esc(p.t) + "</h3><p>" + md(p.d) + "</p></div>";
+      }).join("") + "</div>" +
+      '<div class="stat-strip">' + [
+        ["13", "year levels, Prep to Year 12"], [String(C.stages.length), "developmental stages"], ["6", "domains: 3 literacy, 3 numeracy"],
+        [String(targets), "stage targets"], [String(count(C.routines)), "shared routines"], [String(C.moves.length), "teaching moves"]
+      ].map(function (s) { return '<div class="stat"><b>' + s[0] + "</b><span>" + esc(s[1]) + "</span></div>"; }).join("") + "</div>" +
+      "</div></section>";
+
+    // 3. From the Statement and Framework
+    h += '<section class="section" id="develops"><div class="wrap"><h2>How this develops, Prep to Year 12</h2>' +
+      '<p class="section-intro">' + md(o.intention) + '</p><div class="stage-band">' +
+      C.stages.map(function (s) { return '<div class="stage-card stage-' + s.id + '"><div class="s-name">' + esc(s.name) + '</div><div class="s-years">' + esc(s.long) + "</div><p>" + esc(s.plain) + "</p></div>"; }).join("") +
+      "</div></div></section>";
+
+    ["literacy", "numeracy"].forEach(function (a) {
+      var A = C[a];
+      h += '<section class="section home-area" id="home-' + a + '"><div class="wrap"><div class="card area-block">' +
+        '<div class="area-head"><h2>' + esc(A.name) + '</h2><a class="btn btn-outline" href="#/' + a + '">Explore ' + esc(A.name.toLowerCase()) + " →</a></div>" +
+        '<p class="area-statement">' + md(a === "literacy" ? o.statementLiteracy : o.statementNumeracy) + "</p>" +
+        '<p class="area-def"><span>Framework definition</span>' + md(A.definition) + "</p>" +
+        domainStrip(A) +
+        '<p class="area-goal"><span>Our goal</span>' + md(a === "literacy" ? o.literacyGoal : o.numeracyGoal) + "</p>" +
+        "</div></div></section>";
+    });
+
+    h += '<section class="section"><div class="wrap"><blockquote class="home-goal"><span>Our goal</span>' + md(o.goal) + "</blockquote></div></section>";
+
+    // 4. Find your way
+    h += '<section class="section home-nav" id="find"><div class="wrap"><h2>Find your way</h2>' +
+      '<div class="find-grid">' +
+        '<form class="card home-find" id="find-target" aria-label="Find a target"><h3>Go straight to a target</h3>' +
+          '<div class="find-fields"><label>Area<select name="area"><option value="literacy">Literacy</option><option value="numeracy">Numeracy</option></select></label>' +
+          '<label>Stage<select name="stage">' + C.stages.map(function (s) { return '<option value="' + s.id + '">' + esc(s.name + " (" + s.years + ")") + "</option>"; }).join("") + "</select></label>" +
+          '<label>Domain<select name="domain"></select></label></div>' +
+          '<button class="btn btn-solid" type="submit">Open the target</button></form>' +
+        '<div class="card"><h3>Start from your subject</h3>' +
+          '<div class="home-subjects"><span>Literacy</span><a href="#/literacy?view=method#grid">English</a>' + C.subjects.map(function (s) { return '<a href="#/literacy?view=' + s.id + '#grid">' + esc(s.name) + "</a>"; }).join("") + "</div>" +
+          '<div class="home-subjects"><span>Numeracy</span><a href="#/numeracy?view=method#grid">Mathematics</a>' + C.subjects.map(function (s) { return '<a href="#/numeracy?view=' + s.id + '#grid">' + esc(s.name) + "</a>"; }).join("") + "</div>" +
+        "</div>" +
+      "</div>" +
+      '<div class="quick-links">' + [
+        ["#/overview", "Overview"], ["#/literacy", "Literacy"], ["#/numeracy", "Numeracy"], ["#/progressions", "Progressions"],
+        ["#/implementation", "Implementation"], ["#/posters?set=classroom", "Posters"], ["#/implementation#moves", "Teaching moves"], ["#/implementation#routines", "Shared routines"]
+      ].map(function (l) { return '<a class="quick" href="' + l[0] + '">' + esc(l[1]) + "</a>"; }).join("") + "</div>" +
+      "</div></section>";
+
+    // 5. Everything on this site: full-width tiles, one per section, stacked
+    var tileRow = function (key, title, href, desc, extra) {
+      return '<div class="card sm-row"><div class="sm-intro"><h2><a href="' + href + '">' + esc(title) + '</a></h2><p>' + esc(desc) + '</p><a class="btn btn-outline" href="' + href + '">Open ' + esc(title) + " →</a></div>" +
+        '<div class="sm-links">' + sitemapGroups(key) + (extra || "") + "</div></div>";
     };
-    h += '<section class="section"><div class="wrap"><h2>Everything on this site</h2><p class="section-intro">Every section and its parts. The same links appear in the bar under the header on each section’s pages.</p><div class="sitemap">' +
-      card("overview", "Overview", "#/overview", "What the Framework is for, the four stages, and how the documents fit together.") +
-      card("literacy", "Literacy", "#/literacy", "Speaking and listening, reading and writing: targets, the English method and every subject's strategy.", miniTargets("literacy")) +
-      card("numeracy", "Numeracy", "#/numeracy", "Number and algebra, measurement and geometry, statistics and probability: targets, the Mathematics method and every subject's strategy.", miniTargets("numeracy")) +
-      card("progressions", "Progressions", "#/progressions", "The ACARA sub-elements year by year, with the curriculum codes and each subject's evidence.") +
-      card("implementation", "Implementation", "#/implementation", "Teaching moves, Tier 2 referral, data tracking and roles, plus the resources: routines and posters.",
-        "<h3>Teaching moves</h3><ul>" + C.moves.map(function (m) { return '<li><a href="#/move/' + m.id + '">' + esc(m.name) + "</a></li>"; }).join("") + "</ul>") +
+    h += '<section class="section" id="sitemap"><div class="wrap"><h2>Everything on this site</h2><p class="section-intro">Every section and its parts. The same links appear in the bar under the header on each section’s pages.</p><div class="sitemap-rows">' +
+      tileRow("overview", "Overview", "#/overview", "What the Framework is for, the four stages, and how the documents fit together.") +
+      tileRow("literacy", "Literacy", "#/literacy", "Speaking and listening, reading and writing: the targets, the English method and every subject's strategy.", miniTargets("literacy")) +
+      tileRow("numeracy", "Numeracy", "#/numeracy", "Number and algebra, measurement and geometry, statistics and probability: the targets, the Mathematics method and every subject's strategy.", miniTargets("numeracy")) +
+      tileRow("progressions", "Progressions", "#/progressions", "The ACARA sub-elements year by year, with the curriculum codes and each subject's evidence.") +
+      tileRow("implementation", "Implementation", "#/implementation", "Teaching moves, Tier 2 referral, data tracking and roles, plus the resources: routines and posters.",
+        '<div class="sm-group"><h3>Teaching moves</h3><ul>' + C.moves.map(function (m) { return '<li><a href="#/move/' + m.id + '">' + esc(m.name) + "</a></li>"; }).join("") + "</ul></div>") +
       "</div></div></section>";
 
     page("home", "Home", h);
@@ -182,6 +243,8 @@
     fillDomains();
     f.area.addEventListener("change", fillDomains);
     f.addEventListener("submit", function (e) { e.preventDefault(); location.hash = targetHref(f.area.value, f.stage.value, f.domain.value); });
+    var jumps = main.querySelectorAll('a[href="#find"]');
+    for (var i = 0; i < jumps.length; i++) jumps[i].addEventListener("click", function (e) { e.preventDefault(); scrollToId("find"); });
   }
 
   /* ---------- overview ---------- */
